@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:c="http://www.springframework.org/schema/c"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.3.xsd">
+
+	<!-- Inyección por constructor -->
+	<bean id="autor1" class="com.grupoatrium.modelo.Autor">
+		<constructor-arg value="José Perez" />
+		<constructor-arg value="Español" />
+		<constructor-arg value="Ganador Premio Planeta 2014" />
+	</bean>
+	
+	<bean id="autor2" class="com.grupoatrium.modelo.Autor">
+		<constructor-arg index="0" value="María Santillan" />
+		<constructor-arg index="1" value="mexicana" />
+		<constructor-arg index="2" value="Ganador Premio Planeta 2015" />
+	</bean>
+	
+	<bean id="autor3" class="com.grupoatrium.modelo.Autor">
+		<constructor-arg name="nombre" value="Ann Thompson" />
+		<constructor-arg name="nacionalidad" value="Americana" />
+		<constructor-arg name="comentarios" value="Best Seller" />
+	</bean>
+	
+	<!-- Inyección por propiedades -->
+	<bean id="autor4" class="com.grupoatrium.modelo.Autor">
+		<property name="nombre" value="Pepito Perez"></property>
+		<property name="nacionalidad" value="Español"></property>
+		<property name="comentarios" value="Primer libro del autor"></property>
+	</bean>
+	
+	<bean id="direccion" class="com.grupoatrium.modelo.Direccion">
+		<property name="calle" value="Bravo Murillo"></property>
+		<property name="numero" value="28"></property>
+		<property name="poblacion" value="Madrid"></property>
+		<property name="cp" value="28000"></property>
+		<property name="provincia" value="Madrid"></property>
+	</bean>
+	
+	<!-- Herencia -->
+	<bean id="editorialPadre" class="com.grupoatrium.modelo.Editorial" abstract="true">
+		<property name="nombre" value="Editorial Saturno"></property>
+	</bean>
+	
+	<bean id="editorial" class="com.grupoatrium.modelo.Editorial" parent="editorialPadre">
+		<property name="direccion" ref="direccion"></property>
+		<property name="nif" value="999999999-C"></property>
+	</bean>
+	
+	<!-- Inyección por constructor por tipo -->
+	<bean id="libro1" class="com.grupoatrium.modelo.Libro">
+		<constructor-arg type="java.lang.String" value="11111"/>
+		<constructor-arg type="java.lang.String" value="Enciclopedia Tomo1"/>
+		<constructor-arg type="java.util.List">
+			<list value-type="com.grupoatrium.modelo.Autor">
+				<ref bean="autor1" />
+				<ref bean="autor2" />
+			</list>
+		</constructor-arg>
+		<constructor-arg type="com.grupoatrium.modelo.Editorial" ref="editorial"/>
+		<constructor-arg type="int" value="2"/>
+		<constructor-arg type="double" value="123.60"/>
+		<constructor-arg type="String" value="descripción del libro"/>
+	</bean>
+	
+	<!-- Inyección por propiedades, referencia y bean interno -->
+	<bean id="libro2" class="com.grupoatrium.modelo.Libro">
+		<property name="isbn" value="22222"></property>
+		<property name="titulo" value="Enciclopedia Tomo2"></property>
+		<property name="autores">
+			<list value-type="com.grupoatrium.modelo.Autor">
+				<ref bean="autor3" />
+				<ref bean="autor4"/>
+			</list>
+		</property>
+		<property name="editorial" ref="editorial"></property>
+		<property name="publicacion" value="3"></property>
+		<property name="precio" value="123.60"></property>
+		<property name="descripcion" value="descripción del libro"></property>
+	</bean>
+	
+	<!-- Inyección usando namespace c, p y util -->
+	<util:list id="autores" value-type="com.grupoatrium.modelo.Autor">
+		<ref bean="autor3" />
+		<ref bean="autor4"/>
+	</util:list>
+	
+	<bean id="libro3" class="com.grupoatrium.modelo.Libro"
+		p:isbn="22222"
+		p:titulo="Enciclopedia Tomo2"
+		p:autores-ref="autores"
+		p:editorial-ref="editorial"
+		p:publicacion="3"
+		p:precio="123.60"
+		p:descripcion="descripción del libro" />
+	
+	
+	<!-- Cargamos el archivo de propiedades ubicado en la carpeta config -->
+	<bean
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>classpath:config/data-source.properties</value>
+			</list>
+		</property>
+
+		<property name="ignoreUnresolvablePlaceholders" value="true" />
+	</bean>
+	
+	<!-- Inyectamos las propiedades del bean con los datos del archivo de propiedades -->
+	<bean id="connectionMgr" class="com.grupoatrium.persistencia.ConnectionMgr">
+		<property name="driver" value="${driver}" />
+		<property name="url" value="${url}" />
+		<property name="user" value="${user}" />
+		<property name="password" value="${pw}" />
+	</bean>
+	
+	<bean id="connectAbstract" abstract="true">
+		<property name="connectionMgr" ref="connectionMgr" />
+	</bean>
+		
+	<!-- Factory Bean -->
+	<bean id="connection" class="com.grupoatrium.persistencia.Connection" factory-method="getInstance"/>
+	
+	<!-- factory Bean Instance -->
+	<bean id="connectionInstance" class="com.grupoatrium.persistencia.ConnectionInstance" />
+	<bean id="connectionOther" factory-bean="connectionInstance"  factory-method="createFactoryInstance" />
+	
+	<!-- Inyeccion de DAO -->
+	<bean id="daoAutor" class="com.grupoatrium.persistencia.impl.AutorDAO" parent="connectAbstract" />
+	<bean id="editorialDAO" class="com.grupoatrium.persistencia.impl.EditorialDAO" parent="connectAbstract"/>
+	<bean id="libroDAO" class="com.grupoatrium.persistencia.impl.LibroDAO" parent="connectAbstract" />
+		
+	<!--  Alias -->
+	<alias name="daoAutor" alias="autorDAO"/>
+		
+	<!-- Inyeccion de Services(Bussiness) DAO -->
+	<bean id="autorService" class="com.grupoatrium.negocio.AutorService">
+		<property name="dao" ref="autorDAO" />
+	</bean>
+	<bean id="editorialService" class="com.grupoatrium.negocio.EditorialService">
+		<property name="dao" ref="editorialDAO" />
+	</bean>
+	<bean id="libroService" class="com.grupoatrium.negocio.LibroService">
+		<property name="dao" ref="libroDAO" />
+	</bean>
+	
+</beans>
